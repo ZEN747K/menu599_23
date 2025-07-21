@@ -65,6 +65,12 @@
             font-size: 14px;
         }
 
+        .detail p {
+            margin: 4px 0;
+            font-size: 14px;
+            text-align: end;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -143,6 +149,13 @@
                     <p><strong>เลขที่ใบเสร็จ #{{$pay->payment_number}}</strong></p>
                     <p>วันที่: {{$pay->created_at}}</p>
                 </div>
+                @if (empty($pay->table_id))
+                <div class="detail">
+                    <p><strong>ชื่อ: {{$users->name}}</strong></p>
+                    <p>เบอร์โทรศัพท์: {{$users->address_tel}}</p>
+                    <p>ที่อยู่: {{$users->address_name}}</p>
+                </div>
+                @endif
             </div>
             <table>
                 <thead>

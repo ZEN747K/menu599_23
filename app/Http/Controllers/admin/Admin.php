@@ -14,7 +14,6 @@ use App\Models\OrdersOption;
 use App\Models\Pay;
 use App\Models\PayGroup;
 use App\Models\RiderSend;
-use App\Models\Table;
 use App\Models\User;
 use BaconQrCode\Encoder\QrCode;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -27,9 +26,25 @@ class Admin extends Controller
     public function dashboard()
     {
         $data['function_key'] = __FUNCTION__;
-        $data['orderday'] = Orders::select(DB::raw("SUM(total)as total"))->where('status', 3)->whereDay('created_at', date('d'))->first();
-        $data['ordermouth'] = Orders::select(DB::raw("SUM(total)as total"))->where('status', 3)->whereMonth('created_at', date('m'))->first();
-        $data['orderyear'] = Orders::select(DB::raw("SUM(total)as total"))->where('status', 3)->whereYear('created_at', date('Y'))->first();
+        if (session('user')->is_rider != 1) {
+            $data['orderday'] = Orders::select(DB::raw("SUM(total)as total"))->where('status', 3)->whereDay('created_at', date('d'))->first();
+            $data['ordermouth'] = Orders::select(DB::raw("SUM(total)as total"))->where('status', 3)->whereMonth('created_at', date('m'))->first();
+            $data['orderyear'] = Orders::select(DB::raw("SUM(total)as total"))->where('status', 3)->whereYear('created_at', date('Y'))->first();
+            $data['moneyDay'] = Pay::select(DB::raw("SUM(total)as total"))->where('is_type', 0)->whereDay('created_at', date('d'))->first();
+            $data['transferDay'] = Pay::select(DB::raw("SUM(total)as total"))->where('is_type', 1)->whereDay('created_at', date('d'))->first();
+            $data['delivery'] = Orders::where('status', 3)->where('table_id')->whereDay('created_at', date('d'))->count();
+        } else {
+            $data['delivery_day'] = Orders::join('rider_sends', 'rider_sends.order_id', '=', 'orders.id')
+                ->where('orders.status', 3)
+                ->where('rider_id', session('user')->id)
+                ->whereDay('orders.created_at', date('d'))
+                ->count();
+            $data['delivery_mouth'] = Orders::join('rider_sends', 'rider_sends.order_id', '=', 'orders.id')
+                ->where('orders.status', 3)
+                ->where('rider_id', session('user')->id)
+                ->whereMonth('orders.created_at', date('m'))
+                ->count();
+        }
         $data['ordertotal'] = Orders::count();
         $data['rider'] = User::where('is_rider', 1)->get();
 
@@ -84,23 +99,21 @@ class Admin extends Controller
             foreach ($order as $rs) {
                 $status = '';
                 $pay = '';
-                if ($rs->has_status_1 > 0) {
+                if ($rs->has_status_1 == 1) {
                     $status = '<button type="button" class="btn btn-sm btn-primary update-status" data-id="' . $rs->table_id . '">กำลังทำอาหาร</button>';
-                } else {
+                }
+                if ($rs->has_status_1 == 0) {
                     $status = '<button class="btn btn-sm btn-success">ออเดอร์สำเร็จแล้ว</button>';
                 }
 
                 if ($rs->status != 3) {
-                    $pay = '<a href="' . route('printOrderAdmin', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์</a>
-                    <a href="' . route('printOrderAdminCook', $rs->table_id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ปริ้นออเดอร์ในครัว</a>
-                    <button data-id="' . $rs->table_id . '" data-total="' . $rs->total . '" type="button" class="btn btn-sm btn-outline-success modalPay">ชำระเงิน</button>';
+                    $pay = '<button data-id="' . $rs->table_id . '" data-total="' . $rs->total . '" type="button" class="btn btn-sm btn-outline-success modalPay">ชำระเงิน</button>';
                 }
                 $flag_order = '<button class="btn btn-sm btn-success">สั่งหน้าร้าน</button>';
                 $action = '<button data-id="' . $rs->table_id . '" type="button" class="btn btn-sm btn-outline-primary modalShow m-1">รายละเอียด</button>' . $pay;
-                $table = Table::find($rs->table_id);
                 $info[] = [
                     'flag_order' => $flag_order,
-                    'table_id' => $table->table_number,
+                    'table_id' => $rs->table_id,
                     'total' => $rs->total,
                     'remark' => $rs->remark,
                     'status' => $status,
@@ -370,10 +383,9 @@ class Admin extends Controller
                 $action = '<a href="' . route('printReceipt', $rs->id) . '" target="_blank" type="button" class="btn btn-sm btn-outline-primary m-1">ออกใบเสร็จฉบับย่อ</a>
                 <button data-id="' . $rs->id . '" type="button" class="btn btn-sm btn-outline-primary modalTax m-1">ออกใบกำกับภาษี</button>
                 <button data-id="' . $rs->id . '" type="button" class="btn btn-sm btn-outline-primary modalShowPay m-1">รายละเอียด</button>';
-                $table = Table::find($rs->table_id);
                 $info[] = [
                     'payment_number' => $rs->payment_number,
-                    'table_id' => $table->table_number,
+                    'table_id' => $rs->table_id,
                     'total' => $rs->total,
                     'type' => $type,
                     'created' => $this->DateThai($rs->created_at),
@@ -485,10 +497,19 @@ class Admin extends Controller
         foreach ($paygroup as $rs) {
             $order_id[] = $rs->order_id;
         }
+        $item_id = '';
+        if (empty($pay->table_id)) {
+            $item_id = $order_id[0];
+        }
         $order = OrdersDetails::whereIn('order_id', $order_id)
             ->with('menu', 'option.option')
             ->get();
-        return view('tax', compact('config', 'pay', 'order'));
+        $users = Orders::select('users.*', 'users_addresses.name as address_name', 'users_addresses.tel as address_tel')
+            ->join('users', 'orders.users_id', '=', 'users.id')
+            ->join('users_addresses', 'users.id', '=', 'users_addresses.users_id')
+            ->where('users_addresses.is_use', 1)
+            ->find($item_id);
+        return view('tax', compact('config', 'pay', 'order', 'users'));
     }
 
     public function printReceiptfull($id)
@@ -694,7 +715,7 @@ class Admin extends Controller
         ];
         $id = $request->input('id');
         if ($id) {
-            $order = Orders::where('table_id', $id)->where('status', 1)->get();
+            $order = Orders::where('table_id', $id)->get();
             foreach ($order as $rs) {
                 $rs->status = 2;
                 $rs->save();
@@ -718,11 +739,6 @@ class Admin extends Controller
             $order = Orders::find($id);
             $order->status = 2;
             if ($order->save()) {
-                $check = OrdersDetails::where('order_id', $id)->where('status', 1)->get();
-                foreach ($check as $rs) {
-                    $rs->status = 2;
-                    $rs->save();
-                }
                 $data = [
                     'status' => true,
                     'message' => 'อัพเดทสถานะเรียบร้อยแล้ว',
@@ -732,28 +748,59 @@ class Admin extends Controller
         return response()->json($data);
     }
 
-    public function updatestatusMenu(Request $request)
+    public function ListOrderPeople()
     {
         $data = [
             'status' => false,
-            'message' => 'อัพเดทสถานะไม่สำเร็จ',
+            'message' => '',
+            'data' => []
         ];
-        $id = $request->input('id');
-        if ($id) {
-            $order = OrdersDetails::find($id);
-            $order->status = 2;
-            if ($order->save()) {
-                $check = OrdersDetails::where('order_id', $order->order_id)->where('status', 1)->count();
-                if ($check == 0) {
-                    $updateOrder = Orders::find($order->order_id);
-                    $updateOrder->status = 2;
-                    $updateOrder->save();
-                }
-                $data = [
-                    'status' => true,
-                    'message' => 'อัพเดทสถานะเรียบร้อยแล้ว',
+        $order = DB::table('orders as o')
+            ->select(
+                'o.users_id',
+                'users.name'
+            )
+            ->join('users', 'o.users_id', '=', 'users.id')
+            ->where('o.table_id')
+            ->whereIn('o.status', [3])
+            ->groupBy('o.users_id', 'users.name')
+            ->get();
+
+        if (count($order) > 0) {
+            $info = [];
+            foreach ($order as $rs) {
+                $total = Orders::select(DB::raw("SUM(total)as total"))
+                    ->where('status', 3)
+                    ->where('users_id', $rs->users_id)
+                    ->first();
+                $moneyDay = Orders::select(DB::raw("SUM(orders.total)as total"))
+                    ->join('pay_groups', 'pay_groups.order_id', '=', 'orders.id')
+                    ->join('pays', 'pays.id', '=', 'pay_groups.pay_id')
+                    ->where('orders.status', 3)
+                    ->where('orders.users_id', $rs->users_id)
+                    ->where('pays.is_type', 0)
+                    ->first();
+                $transferDay = Orders::select(DB::raw("SUM(orders.total)as total"))
+                    ->join('pay_groups', 'pay_groups.order_id', '=', 'orders.id')
+                    ->join('pays', 'pays.id', '=', 'pay_groups.pay_id')
+                    ->where('orders.status', 3)
+                    ->where('orders.users_id', $rs->users_id)
+                    ->where('pays.is_type', 1)
+                    ->first();
+                $delivery = Orders::where('status', 3)->where('users_id', $rs->users_id)->where('table_id')->count();
+                $info[] = [
+                    'name' => $rs->name,
+                    'total' => $total->total,
+                    'moneyDay' => $moneyDay->total,
+                    'transferDay' => $transferDay->total ?? '0',
+                    'delivery' => $delivery ?? '0',
                 ];
             }
+            $data = [
+                'data' => $info,
+                'status' => true,
+                'message' => 'success'
+            ];
         }
         return response()->json($data);
     }

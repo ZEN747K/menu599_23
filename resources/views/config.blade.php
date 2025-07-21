@@ -21,7 +21,7 @@
         <div class="row">
             <div class="col-lg-12 col-md-12 order-1">
                 <div class="row d-flex justify-content-center">
-                    <div class="col-10">
+                    <div class="col-12">
                         <form action="{{route('ConfigSave')}}" method="post" enctype="multipart/form-data">
                             @csrf
                             <div class="card">
@@ -55,12 +55,12 @@
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-4">
                                             <label for="color_font" class="form-label">สีข้อความ : </label>
-                                            <button type="button" class="btn btn-sm btn-secondary mb-2" id="demo-font">ตัวอย่างข้อความ</button>
+                                            <button type="button" class="btn btn-secondary mb-2" id="demo-font">ตัวอย่างข้อความ</button>
                                             <input type="color" class="form-control" id="color_font" name="color_font" title="เลือกสี" value="{{$config->color_font}}">
                                         </div>
                                         <div class="col-md-4">
                                             <label for="color_category" class="form-label">สีข้อความของรายการหมวดหมู่ : </label>
-                                            <button type="button" class="btn btn-sm btn-secondary mb-2" id="demo-category">ตัวอย่างข้อความ</button>
+                                            <button type="button" class="btn btn-secondary mb-2" id="demo-category">ตัวอย่างข้อความ</button>
                                             <input type="color" class="form-control" id="color_category" name="color_category" title="เลือกสี" value="{{$config->color_category}}">
                                         </div>
                                     </div>

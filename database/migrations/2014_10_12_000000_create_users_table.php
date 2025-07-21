@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('password');
             $table->string('role')->default('user');
             $table->string('is_rider')->default(0);
-            $table->string('is_member')->default(0);
             $table->string('tel')->nullable();
             $table->rememberToken();
             $table->timestamps();

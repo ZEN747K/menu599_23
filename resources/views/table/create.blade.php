@@ -7,7 +7,7 @@
         <div class="row">
             <div class="col-lg-12 col-md-12 order-1">
                 <div class="row d-flex justify-content-center">
-                    <div class="col-8">
+                    <div class="col-12">
                         <form action="{{route('tableSave')}}" method="post" enctype="multipart/form-data">
                             @csrf
                             <div class="card">

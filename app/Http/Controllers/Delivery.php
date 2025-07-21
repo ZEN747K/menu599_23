@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Events\OrderCreated;
-use App\Http\Controllers\admin\MenuTypeOption;
 use App\Http\Controllers\Controller;
 use App\Models\Categories;
 use App\Models\LogStock;
 use App\Models\Menu;
 use App\Models\MenuOption;
 use App\Models\MenuStock;
-use App\Models\MenuTypeOption as ModelsMenuTypeOption;
+use App\Models\MenuTypeOption;
 use App\Models\Orders;
 use App\Models\OrdersDetails;
 use App\Models\OrdersOption;
@@ -53,7 +52,7 @@ class Delivery extends Controller
                 'base_price' => $rs->base_price,
                 'files' => $rs['files']
             ];
-            $typeOption = ModelsMenuTypeOption::where('menu_id', $rs->id)->get();
+            $typeOption = MenuTypeOption::where('menu_id', $rs->id)->get();
             if (count($typeOption) > 0) {
                 foreach ($typeOption as $typeOptions) {
                     $optionItem = [];
@@ -98,8 +97,6 @@ class Delivery extends Controller
             $orderData = $request->input('cart');
             $remark = $request->input('remark');
             $item = array();
-            $menu_id = array();
-            $categories_id = array();
             $total = 0;
             foreach ($orderData as $key => $order) {
                 $item[$key] = [
@@ -115,15 +112,7 @@ class Delivery extends Controller
                     $item[$key]['option'] = [];
                 }
                 $total = $total + $order['total_price'];
-                $menu_id[] = $order['id'];
             }
-            $menu_id = array_unique($menu_id);
-            foreach ($menu_id as $rs) {
-                $menu = Menu::find($rs);
-                $categories_id[] = $menu->categories_member_id;
-            }
-            $categories_id = array_unique($categories_id);
-
             if (!empty($item)) {
                 $info = UsersAddress::where('is_use', 1)->where('users_id', Session::get('user')->id)->first();
                 if ($info != null) {
@@ -167,21 +156,7 @@ class Delivery extends Controller
                             }
                         }
                     }
-                    $order = [
-                        'is_member' => 0,
-                        'text' => '📦 มีออเดอร์ใหม่'
-                    ];
-                    event(new OrderCreated($order));
-                    if (!empty($categories_id)) {
-                        foreach ($categories_id as $rs) {
-                            $order = [
-                                'is_member' => 1,
-                                'categories_id' => $rs,
-                                'text' => '📦 มีออเดอร์ใหม่'
-                            ];
-                            event(new OrderCreated($order));
-                        }
-                    }
+                    event(new OrderCreated(['📦 มีออเดอร์ใหม่']));
                     $data = [
                         'status' => true,
                         'message' => 'สั่งออเดอร์เรียบร้อยแล้ว',
@@ -296,23 +271,48 @@ class Delivery extends Controller
 
     public function listOrderDetail(Request $request)
     {
-        $orders = OrdersDetails::select('menu_id')
+        $groupedMenus = OrdersDetails::select('menu_id')
             ->where('order_id', $request->input('id'))
             ->groupBy('menu_id')
             ->get();
-
-        if (count($orders) > 0) {
-            $info = '';
-            foreach ($orders as $key => $value) {
-                $order = OrdersDetails::where('order_id', $request->input('id'))
+        $info = '';
+        if ($groupedMenus->count() > 0) {
+            foreach ($groupedMenus as $value) {
+                $orderDetails = OrdersDetails::where('order_id', $request->input('id'))
                     ->where('menu_id', $value->menu_id)
-                    ->with('menu', 'option')
+                    ->with('menu', 'option.option')
                     ->get();
-                $info .= '<div class="card text-white bg-primary mb-3"><div class="card-body"><h5 class="card-title text-white">' . $order[0]['menu']->name . '</h5><p class="card-text">';
-                foreach ($order as $rs) {
-                    $info .= '' . $rs['menu']->name . ' (' . $rs['option']->type . ') จำนวน ' . $rs->quantity . ' ราคา ' . ($rs->quantity * $rs->price) . ' บาท <br>';
+                $menuName = optional($orderDetails->first()->menu)->name ?? 'ไม่พบชื่อเมนู';
+                $info .= '<div class="mb-3">';
+                $info .= '<div class="row">';
+                $info .= '<div class="col-auto d-flex align-items-start">';
+                $info .= '</div>';
+                $info .= '</div>';
+                $detailsText = '';
+                foreach ($orderDetails as $rs) {
+
+                    $priceTotal = number_format($rs->quantity * $rs->price, 2);
+                    $info .= '<ul class="list-group mb-1 shadow-sm rounded">';
+                    $info .= '<li class="list-group-item d-flex justify-content-between align-items-start">';
+                    $info .= '<div class="">';
+                    $info .= '<div><span class="fw-bold">' . htmlspecialchars($menuName) . '</span></div>';
+                    if (!empty($rs->option)) {
+                        foreach ($rs->option as $value) {
+                            $detailsText = $rs->option ? '+ ' . htmlspecialchars($value->option->type) : '';
+                            $info .= '<div class="small text-secondary" style="text-align:start;">' . $detailsText . '</div>';
+                        }
+                    }
+                    $info .= '</div>';
+                    $info .= '<div class="text-end d-flex flex-column align-items-end">';
+                    $info .= '<div class="mb-1">จำนวน: ' . $rs->quantity . '</div>';
+                    $info .= '<div>';
+                    $info .= '<button class="btn btn-sm btn-primary">' . $priceTotal . ' บาท</button>';
+                    $info .= '</div>';
+                    $info .= '</div>';
+                    $info .= '</li>';
+                    $info .= '</ul>';
                 }
-                $info .= '</p></div></div>';
+                $info .= '</div>';
             }
         }
         echo $info;

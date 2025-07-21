@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    svg{
+    svg {
         width: 100%;
     }
 </style>
@@ -11,6 +11,7 @@
 @section('content')
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
+        @if(session('user')->is_rider != 1)
         <div class="row">
             <div class="col-lg-12 col-md-12 order-1">
                 <div class="row">
@@ -19,7 +20,7 @@
                             <div class="card-body">
                                 <div class="card-title d-flex align-items-start justify-content-between">
                                     <div class="avatar flex-shrink-0">
-                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="chart success" class="rounded" />
+                                        <img src="{{asset('assets/img/icons/unicons/chart.png')}}" alt="chart success" class="rounded" />
                                     </div>
                                 </div>
                                 <span class="fw-semibold d-block mb-1">ยอดขายวันนี้</span>
@@ -32,7 +33,7 @@
                             <div class="card-body">
                                 <div class="card-title d-flex align-items-start justify-content-between">
                                     <div class="avatar flex-shrink-0">
-                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="Credit Card" class="rounded" />
+                                        <img src="{{asset('assets/img/icons/unicons/chart.png')}}" alt="Credit Card" class="rounded" />
                                     </div>
                                 </div>
                                 <span class="fw-semibold d-block mb-1">ยอดขายเดือนนี้</span>
@@ -45,7 +46,7 @@
                             <div class="card-body">
                                 <div class="card-title d-flex align-items-start justify-content-between">
                                     <div class="avatar flex-shrink-0">
-                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="Credit Card" class="rounded" />
+                                        <img src="{{asset('assets/img/icons/unicons/chart.png')}}" alt="Credit Card" class="rounded" />
                                     </div>
                                 </div>
                                 <span class="fw-semibold d-block mb-1">ยอดขายปีนี้</span>
@@ -58,17 +59,60 @@
                             <div class="card-body">
                                 <div class="card-title d-flex align-items-start justify-content-between">
                                     <div class="avatar flex-shrink-0">
-                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="chart success" class="rounded" />
+                                        <img src="{{asset('assets/img/icons/unicons/chart.png')}}" alt="chart success" class="rounded" />
                                     </div>
                                 </div>
                                 <span class="fw-semibold d-block mb-1">ออเดอร์ทั้งหมด</span>
-                                <h3 class="card-title mb-2">{{$ordertotal}} รายการ</h3>
+                                <h3 class="card-title mb-2">{{$ordertotal}} ออเดอร์</h3>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 col-md-12 order-2 mb-4">
+            <div class="col-lg-12 col-md-12 order-2">
+                <div class="row">
+                    <div class="col-lg-4 col-md-12 col-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between">
+                                    <div class="avatar flex-shrink-0">
+                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="chart success" class="rounded" />
+                                    </div>
+                                </div>
+                                <span class="fw-semibold d-block mb-1">ยอดเงินสดวันนี้</span>
+                                <h3 class="card-title mb-2">{{$moneyDay->total}} บาท</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-12 col-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between">
+                                    <div class="avatar flex-shrink-0">
+                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="Credit Card" class="rounded" />
+                                    </div>
+                                </div>
+                                <span class="fw-semibold d-block mb-1">ยอดเงินโอนวันนี้</span>
+                                <h3 class="card-title mb-2">{{$transferDay->total}} บาท</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-12 col-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between">
+                                    <div class="avatar flex-shrink-0">
+                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="Credit Card" class="rounded" />
+                                    </div>
+                                </div>
+                                <span class="fw-semibold d-block mb-1">จำนวนจัดส่งวันนี้</span>
+                                <h3 class="card-title mb-2">{{$delivery}} ออเดอร์</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12 order-3 mb-4">
                 <div class="card">
                     <div class="card-header">
                         <h6>สถิติเมนูขายดี</h6>
@@ -81,7 +125,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 col-md-12 order-2 mb-4">
+            <div class="col-lg-6 col-md-12 order-3 mb-4">
                 <div class="card">
                     <div class="card-header">
                         <h6>ยอดขายแต่ละเดือน</h6>
@@ -94,7 +138,65 @@
                     </div>
                 </div>
             </div>
+            <div class="col-lg-12 col-md-12 order-3 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>ยอดรายการสั่งของลูกค้ารายบุคคล</h6>
+                        <hr>
+                    </div>
+                    <div class="card-body">
+                        <table id="myTable" class="display table-responsive">
+                            <thead>
+                                <tr>
+                                    <th class="text-left">ชื่อลูกค้า</th>
+                                    <th class="text-end">ยอดรวม</th>
+                                    <th class="text-end">ยอดเงินสด</th>
+                                    <th class="text-end">ยอดเงินโอน</th>
+                                    <th class="text-end">ยอดจำนวนสั่งอาหาร</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
+        @endif
+        @if(session('user')->is_rider == 1)
+        <div class="row">
+            <div class="col-lg-12 col-md-12 order-1">
+                <div class="row">
+                    <div class="col-lg-6 col-md-12 col-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between">
+                                    <div class="avatar flex-shrink-0">
+                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="chart success" class="rounded" />
+                                    </div>
+                                </div>
+                                <span class="fw-semibold d-block mb-1">จำนวนจัดส่งวันนี้</span>
+                                <h3 class="card-title mb-2">{{$delivery_day}} ออเดอร์</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 col-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between">
+                                    <div class="avatar flex-shrink-0">
+                                        <img src="{{asset('assets/img/icons/unicons/chart-success.png')}}" alt="Credit Card" class="rounded" />
+                                    </div>
+                                </div>
+                                <span class="fw-semibold d-block mb-1">จำนวนจัดส่งเดือนนี้</span>
+                                <h3 class="card-title mb-2">{{$delivery_mouth}} ออเดอร์</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection
@@ -160,6 +262,53 @@
                 }
             }
         }
+    });
+</script>
+<script>
+    var language = '{{asset("assets/js/datatable-language.js")}}';
+    $("#myTable").DataTable({
+        language: {
+            url: language,
+        },
+        processing: true,
+        scrollX: true,
+        order: [
+            [4, 'desc']
+        ],
+        ajax: {
+            url: "{{route('ListOrderPeople')}}",
+            type: "post",
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+        },
+
+        columns: [{
+                data: 'name',
+                class: 'text-left',
+                width: '20%'
+            },
+            {
+                data: 'total',
+                class: 'text-end',
+                width: '20%'
+            },
+            {
+                data: 'moneyDay',
+                class: 'text-end',
+                width: '20%'
+            },
+            {
+                data: 'transferDay',
+                class: 'text-end',
+                width: '20%'
+            },
+            {
+                data: 'delivery',
+                class: 'text-end',
+                width: '20%'
+            },
+        ]
     });
 </script>
 @endsection

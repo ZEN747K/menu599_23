@@ -7,7 +7,7 @@
         <div class="row">
             <div class="col-lg-12 col-md-12 order-1">
                 <div class="row d-flex justify-content-center">
-                    <div class="col-8">
+                    <div class="col-12">
                         <form action="{{route('CategorySave')}}" method="post" enctype="multipart/form-data">
                             @csrf
                             <div class="card">
@@ -19,7 +19,7 @@
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-12">
                                             <label for="name" class="form-label">ชื่อหมวดหมู่ : </label>
-                                            <input type="text" class="form-control" id="name" name="name" required>
+                                            <input type="text" class="form-control" id="name" name="name">
                                         </div>
                                     </div>
                                     <div class="row g-3 mb-3">

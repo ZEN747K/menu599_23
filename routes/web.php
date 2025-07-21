@@ -1,12 +1,10 @@
 <?php
 
 use App\Http\Controllers\admin\Admin;
-use App\Http\Controllers\admin\CategoriesMember;
 use App\Http\Controllers\admin\Category;
 use App\Http\Controllers\admin\CategoryExpenses;
 use App\Http\Controllers\admin\Expenses;
-use App\Http\Controllers\admin\Member;
-use App\Http\Controllers\admin\Memberorder;
+use App\Http\Controllers\admin\exportExcel;
 use App\Http\Controllers\admin\Menu;
 use App\Http\Controllers\admin\MenuTypeOption;
 use App\Http\Controllers\admin\Promotion;
@@ -44,6 +42,12 @@ Route::get('/buy', function () {
 Route::get('/total', function () {
     return view('index');
 });
+//listorder
+Route::get('/listorder', [Main::class, 'listorder'])->name('listorder');
+Route::post('/listorderDetails', [Main::class, 'listorderDetails'])->name('listorderDetails');
+Route::post('/confirmPay', [Main::class, 'confirmPay'])->name('confirmPay');
+Route::post('/admin/order/paymentConfirm', [Admin::class, 'paymentConfirm'])->name('paymentConfirm');
+
 //สั่ง delivery
 Route::get('/delivery', [Delivery::class, 'index'])->name('index');
 Route::get('/delivery/login', [Delivery::class, 'login'])->name('delivery.login');
@@ -97,13 +101,13 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/order/printReceiptfull/{id}', [Admin::class, 'printReceiptfull'])->name('printReceiptfull');
     Route::get('/admin/order_rider', [Admin::class, 'order_rider'])->name('order_rider');
     Route::post('/admin/order/ListOrderRider', [Admin::class, 'ListOrderRider'])->name('ListOrderRider');
+    Route::post('/admin/order/ListOrderPeople', [Admin::class, 'ListOrderPeople'])->name('ListOrderPeople');
     //Cancel
     Route::post('/admin/order/cancelOrder', [Admin::class, 'cancelOrder'])->name('cancelOrder');
     Route::post('/admin/order/cancelMenu', [Admin::class, 'cancelMenu'])->name('cancelMenu');
     //update-status
     Route::post('/admin/order/updatestatus', [Admin::class, 'updatestatus'])->name('updatestatus');
     Route::post('/admin/order/updatestatusOrder', [Admin::class, 'updatestatusOrder'])->name('updatestatusOrder');
-    Route::post('/admin/order/updatestatusMenu', [Admin::class, 'updatestatusMenu'])->name('updatestatusMenu');
     //ตั้งค่าเว็บไซต์
     Route::get('/admin/config', [Admin::class, 'config'])->name('config');
     Route::post('/admin/config/save', [Admin::class, 'ConfigSave'])->name('ConfigSave');
@@ -142,6 +146,7 @@ Route::middleware(['role:admin'])->group(function () {
     //จัดการโต้ะและเพิ่ม Qr code
     Route::get('/admin/OrderRider', [Rider::class, 'OrderRider'])->name('OrderRider');
     Route::post('/admin/OrderRider/listData', [Rider::class, 'OrderRiderlistData'])->name('OrderRiderlistData');
+
     //เมนูอาหาร
     Route::get('/admin/menu', [Menu::class, 'menu'])->name('menu');
     Route::post('/admin/menu/menulistData', [Menu::class, 'menulistData'])->name('menulistData');
@@ -194,33 +199,9 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/admin/expenses/edit/{id}', [Expenses::class, 'ExpensesEdit'])->name('ExpensesEdit');
     Route::post('/admin/expenses/save', [Expenses::class, 'ExpensesSave'])->name('ExpensesSave');
     Route::post('/admin/expenses/delete', [Expenses::class, 'ExpensesDelete'])->name('ExpensesDelete');
-    //สมาชิกหมวดหมู่
-    Route::get('/admin/member/category', [CategoriesMember::class, 'memberCategory'])->name('memberCategory');
-    Route::post('/admin/member/category/listData', [CategoriesMember::class, 'membercategorylistData'])->name('membercategorylistData');
-    Route::get('/admin/member/category/create', [CategoriesMember::class, 'memberCategoryCreate'])->name('memberCategoryCreate');
-    Route::get('/admin/member/category/edit/{id}', [CategoriesMember::class, 'memberCategoryEdit'])->name('memberCategoryEdit');
-    Route::post('/admin/member/category/delete', [CategoriesMember::class, 'memberCategoryDelete'])->name('memberCategoryDelete');
-    Route::post('/admin/member/category/save', [CategoriesMember::class, 'memberCategorySave'])->name('memberCategorySave');
-    //ข้อมูลสมาชิก
-    Route::get('/admin/member', [member::class, 'member'])->name('member');
-    Route::post('/admin/member/listData', [Member::class, 'memberlistData'])->name('memberlistData');
-    Route::get('/admin/member/create', [Member::class, 'memberCreate'])->name('memberCreate');
-    Route::get('/admin/member/edit/{id}', [Member::class, 'memberEdit'])->name('memberEdit');
-    Route::post('/admin/member/delete', [Member::class, 'memberDelete'])->name('memberDelete');
-    Route::post('/admin/member/save', [Member::class, 'memberSave'])->name('memberSave');
-    //ผู้ดูแลเมนูหน้าร้าน
-    Route::get('/admin/memberorder', [Memberorder::class, 'Memberorder'])->name('Memberorder');
-    Route::post('/admin/memberorder/listData', [Memberorder::class, 'MemberorderlistData'])->name('MemberorderlistData');
-    Route::post('/admin/memberorder/MemberorderRiderlistData', [Memberorder::class, 'MemberorderRiderlistData'])->name('MemberorderRiderlistData');
-    //ผู้ดูแลเมนูออนไลน์
-    Route::get('/admin/memberorderRider', [Memberorder::class, 'MemberorderRider'])->name('MemberorderRider');
-    Route::post('/admin/memberorder/MemberorderlistOrderDetail', [Memberorder::class, 'MemberorderlistOrderDetail'])->name('MemberorderlistOrderDetail');
-    Route::post('/admin/memberorder/MemberorderlistOrderDetailRider', [Memberorder::class, 'listOrderDetailRider'])->name('MemberorderlistOrderDetailRider');
-    //ปริ้นออเดอร์
-    Route::get('/admin/order/printOrderAdmin/{id}', [Memberorder::class, 'printOrderAdmin'])->name('printOrderAdmin');
-    Route::get('/admin/order/printOrderAdminCook/{id}', [Memberorder::class, 'printOrderAdminCook'])->name('printOrderAdminCook');
-    Route::get('/admin/order/printOrder/{id}', [Memberorder::class, 'printOrder'])->name('printOrder');
-    Route::get('/admin/order/printOrderRider/{id}', [Memberorder::class, 'printOrderRider'])->name('printOrderRider');
+    //export
+    Route::get('/export-report', [exportExcel::class, 'exportExcel'])->name('exportExcel');
+    Route::get('/export-report-rider', [exportExcel::class, 'exportExcelRider'])->name('exportExcelRider');
 });
 
 

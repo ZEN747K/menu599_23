@@ -4,7 +4,6 @@ namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Categories;
-use App\Models\Categories_member;
 use App\Models\Menu as ModelsMenu;
 use App\Models\MenuFiles;
 use App\Models\MenuOption;
@@ -55,7 +54,6 @@ class Menu extends Controller
     {
         $data['function_key'] = 'menu';
         $data['category'] = Categories::get();
-        $data['category_member'] = Categories_member::get();
         return view('menu.create', $data);
     }
 
@@ -68,7 +66,6 @@ class Menu extends Controller
             $menu->categories_id = $input['categories_id'];
             $menu->base_price = $input['base_price'];
             $menu->detail = $input['detail'];
-            $menu->categories_member_id = $input['categories_member_id'] ?? null;
             if ($menu->save()) {
                 if ($request->hasFile('file')) {
                     $file = $request->file('file');
@@ -88,7 +85,6 @@ class Menu extends Controller
             $menu->categories_id = $input['categories_id'];
             $menu->base_price = $input['base_price'];
             $menu->detail = $input['detail'];
-            $menu->categories_member_id = $input['categories_member_id'] ?? null;
             if ($menu->save()) {
                 if ($request->hasFile('file')) {
                     $categories_file = MenuFiles::where('menu_id', $input['id'])->delete();
@@ -112,10 +108,9 @@ class Menu extends Controller
     {
         $function_key = 'menu';
         $info = ModelsMenu::with('files', 'category')->find($id);
-        $category_member = Categories_member::get();
         $category = Categories::get();
 
-        return view('menu.edit', compact('info', 'function_key', 'category', 'category_member'));
+        return view('menu.edit', compact('info', 'function_key', 'category'));
     }
 
     public function menuDelete(Request $request)

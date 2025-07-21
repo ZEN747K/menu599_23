@@ -40,7 +40,14 @@
             <div class="col-lg-12 col-md-12 order-2">
                 <div class="card">
                     <div class="card-header">
-                        <h6>รายการชำระเงินแล้ว</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <h6>รายการชำระเงินแล้ว</h6>
+                            </div>
+                            <div class="col-6 text-end">
+                                <a href="{{route('exportExcelRider')}}" target="_blank" class="btn btn-sm btn-success">Export Excel</a>
+                            </div>
+                        </div>
                         <hr>
                     </div>
                     <div class="card-body">
