@@ -206,7 +206,7 @@
 <script>
     var language = '{{asset("assets/js/datatable-language.js")}}';
     $(document).ready(function() {
-        $("#myTable").DataTable({
+        var table1 = $("#myTable").DataTable({
             language: {
                 url: language,
             },
@@ -221,6 +221,9 @@
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
+            },
+            createdRow: function(row, data) {
+                $(row).attr('data-order-id', data.id);
             },
 
             columns: [{
@@ -261,6 +264,19 @@
                 },
             ]
         });
+        var highlight = new URLSearchParams(window.location.search).get('highlight');
+        if (highlight) {
+            table1.on('draw', function() {
+                table1.rows().every(function() {
+                    var row = this.node();
+                    if ($(row).attr('data-order-id') === highlight) {
+                        $(row).addClass('highlight-row');
+        
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            });
+        }
         $("#myTable2").DataTable({
             language: {
                 url: language,

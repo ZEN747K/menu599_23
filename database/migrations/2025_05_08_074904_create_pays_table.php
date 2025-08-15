@@ -15,8 +15,13 @@ return new class extends Migration
             $table->id();
             $table->text('payment_number')->nullable();
             $table->integer('table_id')->nullable();
-            $table->text('total')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->decimal('total', 10, 2)->nullable(); 
+            $table->tinyInteger('is_type')->default(0);
             $table->timestamps();
+            
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+       
         });
     }
 

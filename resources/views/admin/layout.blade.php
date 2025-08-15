@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="th" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="{{asset('assets/')}} data-template=" vertical-menu-template-free">
+<html lang="th" class="light-style layout-menu-fixed" dir="ltr"data-theme="theme-default" data-assets-path="{{ asset('assets/') }}" data-template="vertical-menu-template-free">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <title>ระบบร้านค้า</title>
     <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="app-channel" content="{{ request()->header('channel', '') }}">
+    <meta name="app-device" content="{{ request()->header('device', '') }}">
     <link rel="icon" type="image/x-icon" href="{{asset('assets/img/favicon/favicon.ico')}}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,36 +27,146 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Noto+Sans+Thai:wght@100..900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+
     <script>
-        const PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
-        const PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
-        
-        Pusher.logToConsole = true;
-        var pusher = new Pusher(PUSHER_APP_KEY, {
-            cluster: PUSHER_APP_CLUSTER,
-            encrypted: true
+  const PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
+  const PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
+
+  Pusher.logToConsole = true;
+  var pusher = new Pusher(PUSHER_APP_KEY, { cluster: PUSHER_APP_CLUSTER, encrypted: true });
+  var channel = pusher.subscribe('orders');
+
+  function playNotify() {
+    const el = document.getElementById('notifySound');
+    if (!el) return;
+
+    try {
+      el.currentTime = 0;
+      const p = el.play();
+      if (p && typeof p.then === 'function') {
+        p.catch((err) => {
+          console.warn('Autoplay blocked:', err);
+          const once = () => {
+            el.currentTime = 0;
+            el.play().catch(() => {});
+          };
+          window.addEventListener('click', once, { once: true, passive: true });
+          window.addEventListener('touchstart', once, { once: true, passive: true });
         });
-        var channel = pusher.subscribe('orders');
-        channel.bind('App\\Events\\OrderCreated', function(data) {
-            console.log(data.order[0]);
-            document.getElementById('notifySound').play();
-            Swal.fire({
-                icon: 'info',
-                title: data.order[0],
-            })
-        });
-    </script>
+      }
+    } catch (e) {
+      console.error('play() error:', e);
+      throw e;
+    }
+  }
+
+  // ปลดล็อกเสียงครั้งแรกเมื่อมี gesture (กัน NotAllowedError บน iOS/Chrome)
+  function unlockAudioOnce() {
+    const el = document.getElementById('notifySound');
+    if (!el) return;
+    const handler = () => {
+      try { el.play().then(() => { el.pause(); el.currentTime = 0; }).catch(()=>{}); } catch(_){}
+      window.removeEventListener('click', handler);
+      window.removeEventListener('touchstart', handler);
+    };
+    window.addEventListener('click', handler, { once: true, passive: true });
+    window.addEventListener('touchstart', handler, { once: true, passive: true });
+  }
+  document.addEventListener('DOMContentLoaded', unlockAudioOnce);
+
+  function showOrderNotification(order) {
+    if (!order) return;
+    const container = document.getElementById('orderNotifications');
+    if (!container) return;
+    const box = document.createElement('div');
+    box.className = 'order-alert';
+    const title = order.table_number ? `โต๊ะ ${order.table_number}` : 'ออเดอร์ออนไลน์';
+    const items = (order.items || []).join(', ');
+    box.innerHTML = `<strong>${title}</strong><br>${items}<br><small>${order.created_at}</small><span class="close">&times;</span>`;
+    box.querySelector('.close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      box.remove();
+    });
+    box.addEventListener('click', () => {
+      const url = order.is_online ? `/admin/order_rider?highlight=${order.id}` : `/admin/order?highlight=${order.table_number}`;
+      window.location.href = url;
+    });
+    container.appendChild(box);
+  }
+
+  channel.bind('App\\Events\\OrderCreated', function(data) {
+    console.log(data.order[0]);
+    
+
+    
+    // เรียกการเช็คออเดอร์ใหม่ก่อน เพื่อให้ระบบออโต้ปริ้นทำงานทันที
+    if (typeof checkNewOrders === 'function') {
+      checkNewOrders();
+    }
+    
+    // แสดง Popup หลังการพิมพ์ (Android ไม่มีเสียงแจ้งเตือน)
+    setTimeout(() => {
+      const meta = document.querySelector('meta[name="app-device"]');
+      const isAndroid = meta && meta.getAttribute('content').toLowerCase() === 'android';
+      if (!isAndroid) {
+        try {
+          playNotify();
+        } catch (e) {
+          console.error('notify sound error:', e);
+        }
+      }
+      Swal.fire({
+        icon: 'info',
+        title: data.order[0],
+        timer: 1000,
+        showConfirmButton: false
+      });
+    }, 1000);
+  });
+</script>
+
     <style>
         body {
             font-family: "Noto Sans Thai", sans-serif;
             font-optical-sizing: auto;
+        }
+        #orderNotifications {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+        }
+
+        .order-alert {
+            position: relative;
+            background: #fff;
+            border-left: 4px solid #0d6efd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            padding: 0.5rem 1.5rem 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            min-width: 260px;
+        }
+
+        .order-alert .close {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 1.2rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .highlight-row {
+            background: #fff3cd !important;
         }
     </style>
     @yield('style')
 </head>
 
 <body>
-    <audio id="notifySound" src="{{asset('sound/test.mp3')}}" preload="auto"></audio>
+    <audio id="notifySound" src="{{asset('sound/test.mp3')}}" preload="auto" playsinline></audio>
+    <div id="orderNotifications"></div>
     @if ($message = Session::get('success'))
     <script>
         Swal.fire({
@@ -101,6 +215,47 @@
     <script src="{{asset('assets/js/main.js')}}"></script>
     <script src="{{asset('assets/js/dashboards-analytics.js')}}"></script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script>
+        function checkNewOrders() {
+            fetch("{{ route('checkNewOrders') }}")
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status) {
+                        if (res.order) {
+                            showOrderNotification(res.order);
+                        }
+                        if (res.table_id) {
+                            const channelMeta = document.querySelector('meta[name="app-channel"]');
+                            const deviceMeta = document.querySelector('meta[name="app-device"]');
+                            const channel = channelMeta ? channelMeta.content : '';
+                            const device = deviceMeta ? deviceMeta.content : '';
+                            const printUrl = `/admin/order/printOrderAdminCook/${res.table_id}?channel=${channel}&device=${device}`;
+                            try {
+                                sessionStorage.setItem('admin-prev-url', window.location.href);
+                            } catch (e) {
+                                console.warn('sessionStorage unavailable', e);
+                            }
+                            window.location.href = printUrl;
+                        }
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        setInterval(checkNewOrders, 1000);
+
+        window.addEventListener('message', function(e) {
+            if (e.data === 'cook-print-done') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'ปริ้น Order ในครัวแบบออโต้เรียบร้อยแล้ว',
+                    timer: 1000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    </script>
+    
 </body>
 
 </html>

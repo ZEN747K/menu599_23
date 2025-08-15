@@ -13,7 +13,7 @@ class CategoriesMember extends Controller
         $data['function_key'] = __FUNCTION__;
         return view('member.category', $data);
     }
-
+//T
     public function membercategorylistData()
     {
         $data = [

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('address_id')->nullable();
             $table->integer('total');
             $table->text('remark')->nullable();
+            $table->string('image')->nullable(); 
             $table->integer('status')->default(1);
             $table->timestamps();
         });
