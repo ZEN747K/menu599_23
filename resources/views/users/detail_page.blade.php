@@ -17,7 +17,7 @@
     <style>
 
 .header-section {
-    background: linear-gradient(135deg, #6cd4e2ff 0%, #8fd8e0ff 100%);
+    background: linear-gradient(135deg, #f50018 0%, #f50018 100%);
     padding: 15px 15px 20px 15px;
     border-radius: 0 0 25px 25px;
     box-shadow: 0 3px 12px rgba(0,0,0,0.1);
